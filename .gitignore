@@ -1,0 +1,69 @@
+# 媒体文件
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.m4v
+*.mpg
+*.mpeg
+*.3gp
+*.vob
+
+# 音频文件
+*.wav
+*.mp3
+*.aac
+*.ogg
+*.flac
+*.m4a
+*.wma
+*.aiff
+*.alac
+
+# 图像文件（如果太大）
+*.psd
+*.ai
+*.tif
+*.tiff
+*.bmp
+*.raw
+*.cr2
+*.nef
+*.arw
+
+# 压缩文件（通常包含大文件）
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.iso
+
+# 临时文件
+*.tmp
+*.temp
+temp/
+tmp/
+
+# 缓存文件夹
+.cache/
+cache/
+__pycache__/
+
+# 项目特定的输出文件夹（根据需要调整）
+output/
+rendered/
+exports/
+dist/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志文件
+*.log
+logs/
