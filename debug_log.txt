@@ -1,0 +1,35 @@
+18:50:04 - 脚本开始执行
+18:50:04 - 找到 1 个视频文件
+18:50:04 -   1. 哭包二姐.mp4
+18:50:04 - 错误: ffprobe 不可用，请确保ffmpeg已安装并在PATH中
+19:11:05 - 脚本开始执行
+19:11:05 - 找到 1 个视频文件
+19:11:05 -   1. 哭包二姐.mp4
+19:11:05 - 错误: ffprobe 不可用，请确保ffmpeg已安装并在PATH中
+19:15:48 - 脚本开始执行
+19:15:48 - 找到 1 个视频文件
+19:15:48 -   1. 哭包二姐.mp4
+19:15:49 - ffprobe 可用
+19:15:49 - 测试处理: D:/my_video_project/input\哭包二姐.mp4
+19:15:49 - 视频时长: 1822.51秒
+19:15:49 - 写入权限测试成功
+19:15:49 - 脚本执行完成
+19:21:45 - 脚本开始执行
+19:21:59 - ffprobe 可用
+19:21:59 - 找到 1 个视频文件
+19:21:59 -   1. 哭包二姐.mp4
+19:21:59 - 文件大小: 1735.61 MB
+19:21:59 - 视频时长: 1822.51 秒
+19:21:59 - 正在处理文件: D:/my_video_project/input\哭包二姐.mp4
+19:21:59 - 步骤1: 音频提取和标准化...
+19:21:59 - 执行的音频提取命令: C:\ffmpeg-2025-02-26-git-99e2af4e78-essentials_build\bin\ffmpeg.exe -y -i D:/my_video_project/input\哭包二姐.mp4 -vn -ar 16000 -ac 1 -acodec pcm_s16le -filter:a loudnorm -threads 4 -progress pipe:1 D:/my_video_project/output\temp_哭包二姐.wav
+22:53:32 - ffprobe 可用
+22:53:32 - 找到 1 个视频文件
+22:53:32 -   1. 哭包二姐.mp4
+22:53:32 - 文件大小: 1735.61 MB
+22:53:32 - 视频时长: 1822.51 秒
+22:53:32 - 使用优化线程数: 8
+22:53:32 - 发现硬件加速: h264_nvenc
+22:53:32 - 正在处理文件: D:\my_video_project\videos\哭包二姐.mp4
+22:53:32 - 步骤1: 音频提取和标准化...
+22:53:32 - 执行的音频提取命令: C:\ffmpeg-2025-02-26-git-99e2af4e78-essentials_build\bin\ffmpeg.exe -y -i D:\my_video_project\videos\哭包二姐.mp4 -vn -ar 16000 -ac 1 -acodec pcm_s16le -filter:a loudnorm -threads 8 -stats -progress pipe:1 -bufsize 8M -probesize 20M D:\my_video_project\audio_output\temp_哭包二姐.wav
