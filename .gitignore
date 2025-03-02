@@ -47,6 +47,7 @@
 *.temp
 temp/
 tmp/
+.env
 
 # 缓存文件夹
 .cache/
