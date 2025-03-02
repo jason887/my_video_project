@@ -43,24 +43,26 @@ class AutoVoiceFilter:
     def __init__(self, use_cpu=False):
         self.model = None
         self.reference_voice = None
-        self.similarity_threshold = 0.7
+        self.similarity_threshold = 0.7  # 提高默认阈值
         self.embedding_cache = {}
-        
+
         if not VOICE_PRINT_AVAILABLE:
             return
 
         # 硬件配置
         self.device = "cpu" if use_cpu else "cuda" if torch.cuda.is_available() else "cpu"
         log_message(f"初始化语音引擎 → 使用设备: {self.device.upper()}")
-        
+
         try:
             model_path = PROJECT_DIR / "voice_models"
+            log_message(f"尝试加载模型，路径: {model_path}") # 增加模型加载日志
             self.model = EncoderClassifier.from_hparams(
                 source="speechbrain/spkrec-ecapa-voxceleb",
                 savedir=str(model_path),
                 run_opts={"device": self.device}
             )
             self.model.eval()
+            log_message(f"模型加载成功") # 增加模型加载成功日志
         except Exception as e:
             log_message(f"模型加载失败: {str(e)}")
 
@@ -68,7 +70,7 @@ class AutoVoiceFilter:
         """获取声纹特征（带缓存）"""
         if not self.model:
             return None
-            
+
         cache_key = str(audio_path)
         if cache_key in self.embedding_cache:
             return self.embedding_cache[cache_key]
@@ -80,11 +82,11 @@ class AutoVoiceFilter:
                 waveform = torchaudio.transforms.Resample(orig_freq, 16000)(waveform)
             if waveform.shape[1] < 16000:
                 waveform = torch.nn.functional.pad(waveform, (0, 16000 - waveform.shape[1]))
-                
+
             # 提取特征
             embedding = self.model.encode_batch(waveform.to(self.device))
             result = embedding.squeeze().cpu().detach().numpy()
-            
+
             self.embedding_cache[cache_key] = result
             return result
         except Exception as e:
@@ -110,7 +112,7 @@ class AutoVoiceFilter:
                 if f1 != f2:
                     sim = np.dot(v1, v2)/(np.linalg.norm(v1)*np.linalg.norm(v2))
                     similarities.append(sim)
-        
+
         if len(similarities) == 0:
             log_message("警告：样本间相似度过低，可能包含混杂音频")
             return False
@@ -128,16 +130,16 @@ class AutoVoiceFilter:
 
         # 自动设置阈值（更严格）
         self.similarity_threshold = max(0.65, avg_sim - 1.5*std_sim)
-        
+
         self.reference_voice = voiceprints[best_sample]
-        log_message(f"样本平均相似度: {avg_sim:.2f} | 自动阈值: {self.similarity_threshold:.2f}")
+        log_message(f"样本平均相似度: {avg_sim:.2f} | 标准差: {std_sim:.2f} | 自动阈值: {self.similarity_threshold:.2f}") # 增加标准差日志
         return True
 
     def is_clean_audio(self, audio_path):
         """判断是否为纯净音频（带相似度记录）"""
         if not self.model or not self.reference_voice:
             return True
-            
+
         current_vp = self._get_voiceprint(audio_path)
         if current_vp is None:
             return False
@@ -145,8 +147,8 @@ class AutoVoiceFilter:
         similarity = np.dot(self.reference_voice, current_vp) / (
             np.linalg.norm(self.reference_voice) * np.linalg.norm(current_vp)
         )
-        log_message(f"相似度检测 [{audio_path.name}]: {similarity:.2f}")  # 新增日志
-        
+        log_message(f"相似度检测 [{audio_path.name}]: {similarity:.2f} | 阈值: {self.similarity_threshold:.2f}")  # 新增日志，包含阈值
+
         return similarity >= self.similarity_threshold
 
 def generate_test_noise():
@@ -154,8 +156,8 @@ def generate_test_noise():
     sample_rate = 16000
     duration = 5  # 5秒
     t = np.linspace(0, duration, int(sample_rate * duration))
-    noise = np.random.normal(0, 0.5, len(t)).astype(np.float32)
-    
+    noise = np.random.normal(0, 0.7, len(t)).astype(np.float32) # 稍微增加噪音强度
+
     with wave.open(str(TEST_NOISE_FILE), 'w') as f:
         f.setnchannels(1)
         f.setsampwidth(2)
@@ -166,11 +168,11 @@ def inject_test_files(host_dir, num=3):
     """为主播目录注入测试文件"""
     if not TEST_NOISE_FILE.exists():
         generate_test_noise()
-    
+
     host_dir = Path(host_dir)
     for i in range(num):
         test_file = host_dir / f"TEST_NOISE_{i}.wav"
-        shutil.copy(TEST_NOISE_FILE, test_file)
+        shutil.copy2(TEST_NOISE_FILE, test_file)
         log_message(f"已注入测试文件: {test_file.name}")
 
 def process_host(host_prefix, src_dir, dst_dir, use_ai=True):
@@ -183,15 +185,19 @@ def process_host(host_prefix, src_dir, dst_dir, use_ai=True):
     # 注入测试文件
     inject_test_files(src_dir)
     audio_files += [f for f in Path(src_dir).glob("TEST_NOISE_*.wav")]
-    
-    log_message(f"开始处理主播: {host_prefix} (共 {len(audio_files)} 个文件)")
-    
+
+    log_message(f"开始处理主播: {host_prefix} (共 {len(audio_files)} 个文件) | AI智能过滤: {'启用' if use_ai else '禁用'}") # 增加AI模式启用/禁用日志
+
     # 初始化过滤器
     filter = AutoVoiceFilter()
     if use_ai and VOICE_PRINT_AVAILABLE:
         if not filter.auto_setup(audio_files):
             log_message("智能模式失败，转为简单复制")
             use_ai = False
+    elif use_ai and not VOICE_PRINT_AVAILABLE:
+        log_message("声纹库不可用，无法启用智能模式，转为简单复制")
+        use_ai = False
+
 
     # 创建输出目录
     output_dir = Path(dst_dir) / host_prefix
@@ -201,20 +207,20 @@ def process_host(host_prefix, src_dir, dst_dir, use_ai=True):
     test_results = {"pass": 0, "block": 0}
     for audio_file in audio_files:
         is_test = "TEST_NOISE" in audio_file.name
-        
+
         if not use_ai or filter.is_clean_audio(audio_file):
             dest = output_dir / audio_file.name
             shutil.copy2(audio_file, dest)
             log_msg = f"保留: {audio_file.name}"
-            if is_test: 
+            if is_test:
                 test_results["pass"] += 1
                 log_msg += " ✘ 测试未通过"
         else:
             log_msg = f"过滤: {audio_file.name}"
-            if is_test: 
+            if is_test:
                 test_results["block"] += 1
                 log_msg += " ✔ 测试通过"
-        
+
         log_message(log_msg)
 
     # 输出测试结果
@@ -226,18 +232,19 @@ if __name__ == "__main__":
     parser.add_argument("--dst", default=str(FILTERED_DIR), help="输出目录路径")
     parser.add_argument("--prefix", help="主播名前缀（多个用逗号分隔）")
     parser.add_argument("--auto", action="store_true", help="启用智能过滤")
+    parser.add_argument("--cpu", action="store_true", dest="use_cpu", help="强制使用CPU，禁用CUDA") # 新增 --cpu 参数
     args = parser.parse_args()
 
     log_message("="*40)
     log_message("主播语音过滤开始".center(40))
-    
+
     # 自动检测所有主播
     if args.prefix:
         prefixes = args.prefix.split(",")
     else:
         all_files = list(Path(args.src).glob("*"))
         prefixes = sorted({f.name.split("_")[0] for f in all_files if f.is_file()})
-    
+
     for prefix in prefixes:
         process_host(prefix.strip(), args.src, args.dst, args.auto)
 
